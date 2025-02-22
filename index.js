@@ -19,6 +19,7 @@ app.listen(port, () => {
 
 const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_Pass}@cluster0.isok8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
+
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
     serverApi: {
@@ -35,6 +36,8 @@ async function run() {
 
         const database = client.db("sportsDb");
         const productsCollection = database.collection("sportsProducts");
+        const categoriesCollection = database.collection("sportsCategories");
+
 
         // Test route
         app.get("/", (req, res) => {
@@ -43,9 +46,18 @@ async function run() {
 
         // GET all products
         app.get("/products", async (req, res) => {
-            const products = await productsCollection.find().toArray();
-            res.json(products);
+            try {
+                const limit = parseInt(req.query.limit) || 16; // Default to 6 if no limit is specified
+                const products = await productsCollection.find().limit(limit).toArray();
+                res.json(products);
+            } catch (error) {
+                res.status(500).json({ error: "Error fetching products" });
+            }
         });
+
+
+
+
 
         // POST a new product
         app.post("/products", async (req, res) => {
@@ -61,6 +73,16 @@ async function run() {
             res.json(result);
         });
 
+
+        /** -----------------------
+                *  CATEGORIES API
+                * ----------------------- */
+
+        // GET all categories
+        app.get("/categories", async (req, res) => {
+            const categories = await categoriesCollection.find().toArray();
+            res.json(categories);
+        });
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
