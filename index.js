@@ -47,15 +47,14 @@ async function run() {
         // GET all products
         app.get("/products", async (req, res) => {
             try {
-                const limit = parseInt(req.query.limit) || 16; // Default to 6 if no limit is specified
+                const limit = parseInt(req.query.limit);
                 const products = await productsCollection.find().limit(limit).toArray();
+                products.forEach(product => product._id = product._id.toString());
                 res.json(products);
             } catch (error) {
                 res.status(500).json({ error: "Error fetching products" });
             }
         });
-
-
 
 
 
@@ -84,6 +83,8 @@ async function run() {
             res.json(categories);
         });
 
+
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -95,6 +96,9 @@ async function run() {
     }
 }
 run().catch(console.dir);
+
+
+
 
 
 
