@@ -2,6 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, } = require("mongodb");
+const { ObjectId } = require("mongodb");
+
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -37,6 +39,7 @@ async function run() {
         const database = client.db("sportsDb");
         const productsCollection = database.collection("sportsProducts");
         const categoriesCollection = database.collection("sportsCategories");
+        const myEquipmentCollection = database.collection("myEquipment");
 
 
         // Test route
@@ -57,13 +60,51 @@ async function run() {
         });
 
 
-
         // POST a new product
         app.post("/products", async (req, res) => {
             const newProduct = req.body;
             const result = await productsCollection.insertOne(newProduct);
             res.json(result);
         });
+
+
+        app.get("/my-equipment", async (req, res) => {
+            try {
+
+                const equipments = await myEquipmentCollection.find().toArray();
+                equipments.forEach(product => product._id = product._id.toString());
+                res.json(equipments);
+            } catch (error) {
+                res.status(500).json({ error: "Error fetching products" });
+            }
+        });
+
+        app.post("/my-equipment", async (req, res) => {
+            const newEquip = req.body;
+            const result = await myEquipmentCollection.insertOne(newEquip);
+            res.json(result);
+        });
+
+
+
+
+        // GET a single product by ID
+        app.get("/products/:id", async (req, res) => {
+            try {
+                const id = req.params.id;
+                const product = await productsCollection.findOne({ _id: new ObjectId(id) });
+
+                if (!product) {
+                    return res.status(404).json({ error: "Product not found" });
+                }
+
+                product._id = product._id.toString(); // Convert ObjectId to string
+                res.json(product);
+            } catch (error) {
+                res.status(500).json({ error: "Error fetching product" });
+            }
+        });
+
 
         // DELETE a product
         app.delete("/products/:id", async (req, res) => {
