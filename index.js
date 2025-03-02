@@ -39,7 +39,6 @@ async function run() {
         const database = client.db("sportsDb");
         const productsCollection = database.collection("sportsProducts");
         const categoriesCollection = database.collection("sportsCategories");
-        const myEquipmentCollection = database.collection("myEquipment");
 
 
         // Test route
@@ -59,34 +58,12 @@ async function run() {
             }
         });
 
-
         // POST a new product
         app.post("/products", async (req, res) => {
             const newProduct = req.body;
             const result = await productsCollection.insertOne(newProduct);
             res.json(result);
         });
-
-
-        app.get("/my-equipment", async (req, res) => {
-            try {
-
-                const equipments = await myEquipmentCollection.find().toArray();
-                equipments.forEach(product => product._id = product._id.toString());
-                res.json(equipments);
-            } catch (error) {
-                res.status(500).json({ error: "Error fetching products" });
-            }
-        });
-
-        app.post("/my-equipment", async (req, res) => {
-            const newEquip = req.body;
-            const result = await myEquipmentCollection.insertOne(newEquip);
-            res.json(result);
-        });
-
-
-
 
         // GET a single product by ID
         app.get("/products/:id", async (req, res) => {
@@ -105,7 +82,6 @@ async function run() {
             }
         });
 
-
         // DELETE a product
         app.delete("/products/:id", async (req, res) => {
             const id = req.params.id;
@@ -113,6 +89,19 @@ async function run() {
             res.json(result);
         });
 
+        app.get("/my-equipment", async (req, res) => {
+            try {
+                const userEmail = req.query.email; // Get user email from query params
+                if (!userEmail) {
+                    return res.status(400).json({ error: "User email is required" });
+                }
+
+                const products = await productsCollection.find({ userEmail }).toArray();
+                res.json(products);
+            } catch (error) {
+                res.status(500).json({ error: "Error fetching user's equipment" });
+            }
+        });
 
         /** -----------------------
                 *  CATEGORIES API
