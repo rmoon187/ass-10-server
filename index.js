@@ -1,28 +1,18 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion, } = require("mongodb");
-const { ObjectId } = require("mongodb");
-
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors()); // Enable CORS
+app.use(cors()); // Enable CORSa
 app.use(express.json()); // Parse JSON requests
 
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-});
-
-
 // MongoDB Connection
-
 const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_Pass}@cluster0.isok8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
     serverApi: {
         version: ServerApiVersion.v1,
@@ -33,18 +23,21 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        // Connect the client to the server	(optional starting in v4.7)
+        // Connect the client to the server
         await client.connect();
 
         const database = client.db("sportsDb");
         const productsCollection = database.collection("sportsProducts");
         const categoriesCollection = database.collection("sportsCategories");
 
-
-        // Test route
+        // Test Route
         app.get("/", (req, res) => {
             res.send("Server is running!");
         });
+
+        /** -----------------------
+         *  PRODUCTS API
+         * ----------------------- */
 
         // GET all products
         app.get("/products", async (req, res) => {
@@ -56,13 +49,6 @@ async function run() {
             } catch (error) {
                 res.status(500).json({ error: "Error fetching products" });
             }
-        });
-
-        // POST a new product
-        app.post("/products", async (req, res) => {
-            const newProduct = req.body;
-            const result = await productsCollection.insertOne(newProduct);
-            res.json(result);
         });
 
         // GET a single product by ID
@@ -82,6 +68,13 @@ async function run() {
             }
         });
 
+        // POST a new product
+        app.post("/products", async (req, res) => {
+            const newProduct = req.body;
+            const result = await productsCollection.insertOne(newProduct);
+            res.json(result);
+        });
+
         // DELETE a product
         app.delete("/products/:id", async (req, res) => {
             const id = req.params.id;
@@ -89,6 +82,31 @@ async function run() {
             res.json(result);
         });
 
+        // UPDATE a product by ID
+        app.put("/products/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const updatedProduct = req.body;
+            const updateDoc = {
+                $set: {
+                    image: updatedProduct.image,
+                    itemName: updatedProduct.itemName,
+                    categoryName: updatedProduct.categoryName,
+                    price: updatedProduct.price,
+                    description: updatedProduct.description,
+                    rating: updatedProduct.rating,
+                    customization: updatedProduct.customization,
+                    stockStatus: updatedProduct.stockStatus,
+                    processingTime: updatedProduct.processingTime,
+                },
+            }
+            const result = await productsCollection.updateOne(query, updateDoc);
+
+            res.send(result);
+
+        })
+
+        // GET products by user email
         app.get("/my-equipment", async (req, res) => {
             try {
                 const userEmail = req.query.email; // Get user email from query params
@@ -104,8 +122,8 @@ async function run() {
         });
 
         /** -----------------------
-                *  CATEGORIES API
-                * ----------------------- */
+         *  CATEGORIES API
+         * ----------------------- */
 
         // GET all categories
         app.get("/categories", async (req, res) => {
@@ -113,12 +131,9 @@ async function run() {
             res.json(categories);
         });
 
-
-
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
-
 
     } finally {
         // Ensures that the client will close when you finish/error
@@ -127,8 +142,7 @@ async function run() {
 }
 run().catch(console.dir);
 
-
-
-
-
-
+// Start Server
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+});
