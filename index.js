@@ -7,8 +7,8 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors()); // Enable CORSa
-app.use(express.json()); // Parse JSON requests
+app.use(cors());
+app.use(express.json());
 
 // MongoDB Connection
 const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_Pass}@cluster0.isok8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -41,45 +41,36 @@ async function run() {
 
         // GET all products
         app.get("/products", async (req, res) => {
-            try {
-                const limit = parseInt(req.query.limit);
-                const products = await productsCollection.find().limit(limit).toArray();
-                products.forEach(product => product._id = product._id.toString());
-                res.json(products);
-            } catch (error) {
-                res.status(500).json({ error: "Error fetching products" });
-            }
+
+            const limit = parseInt(req.query.limit);
+            const products = await productsCollection.find().limit(limit).toArray();
+            products.forEach(product => product._id = product._id.toString());
+            res.send(products);
+
         });
 
         // GET a single product by ID
         app.get("/products/:id", async (req, res) => {
-            try {
-                const id = req.params.id;
-                const product = await productsCollection.findOne({ _id: new ObjectId(id) });
 
-                if (!product) {
-                    return res.status(404).json({ error: "Product not found" });
-                }
+            const id = req.params.id;
+            const product = await productsCollection.findOne({ _id: new ObjectId(id) });
+            product._id = product._id.toString();
+            res.send(product);
 
-                product._id = product._id.toString(); // Convert ObjectId to string
-                res.json(product);
-            } catch (error) {
-                res.status(500).json({ error: "Error fetching product" });
-            }
         });
 
         // POST a new product
         app.post("/products", async (req, res) => {
             const newProduct = req.body;
             const result = await productsCollection.insertOne(newProduct);
-            res.json(result);
+            res.send(result);
         });
 
         // DELETE a product
         app.delete("/products/:id", async (req, res) => {
             const id = req.params.id;
             const result = await productsCollection.deleteOne({ _id: new ObjectId(id) });
-            res.json(result);
+            res.send(result);
         });
 
         // UPDATE a product by ID
@@ -108,17 +99,11 @@ async function run() {
 
         // GET products by user email
         app.get("/my-equipment", async (req, res) => {
-            try {
-                const userEmail = req.query.email; // Get user email from query params
-                if (!userEmail) {
-                    return res.status(400).json({ error: "User email is required" });
-                }
 
-                const products = await productsCollection.find({ userEmail }).toArray();
-                res.json(products);
-            } catch (error) {
-                res.status(500).json({ error: "Error fetching user's equipment" });
-            }
+            const userEmail = req.query.email; // Get user email from query params             
+            const products = await productsCollection.find({ userEmail }).toArray();
+            res.send(products);
+
         });
 
         /** -----------------------
@@ -128,7 +113,7 @@ async function run() {
         // GET all categories
         app.get("/categories", async (req, res) => {
             const categories = await categoriesCollection.find().toArray();
-            res.json(categories);
+            res.send(categories);
         });
 
         // Send a ping to confirm a successful connection
